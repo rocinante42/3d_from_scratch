@@ -23,16 +23,22 @@ render_color_buffer :: proc() {
 
 
 render_draw_rectangle :: proc(x, y, w, h: int, color: u32) {
-	assert(x >= 0 && x <= WINDOW_WIDTH && w <= WINDOW_WIDTH)
-	assert(y >= 0 && y <= WINDOW_HEIGHT && h <= WINDOW_HEIGHT)
-
-	for i := 0; i < h; i += 1 {
-		for j := 0; j < w; j += 1 {
-			// get the current index in the buffer based on x:
-			starting_index := (y + i) * WINDOW_WIDTH + x + j
-			color_buffer[starting_index] = color
+	if x >= 0 &&
+	   x <= WINDOW_WIDTH &&
+	   w <= WINDOW_WIDTH &&
+	   y >= 0 &&
+	   y <= WINDOW_HEIGHT &&
+	   h <= WINDOW_HEIGHT {
+		for i := 0; i < h; i += 1 {
+			for j := 0; j < w; j += 1 {
+				// get the current index in the buffer based on x:
+				starting_index := (y + i) * WINDOW_WIDTH + x + j
+				color_buffer[starting_index] = color
+			}
 		}
+
 	}
+
 }
 
 render_draw_grid :: proc() {
