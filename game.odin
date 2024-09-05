@@ -8,42 +8,13 @@ FRAME_TARGET_TIME :: 1000 / FPS
 previous_frame_time: u32 = 0
 
 
-N_POINTS :: 8
-// N_POINTS :: 9 * 9 * 9
-cube_points: [N_POINTS]Vec3
-projected_points: [N_POINTS]Vec2
-
 fov_factor: f32 = 128
 camera_position := Vec3{0, 0, -3}
 cube_rotation := Vec3{}
+cube_faces := mesh_generate_cube_faces()
 
 
-draw_noisey_cube :: proc() {
-	point_count := 0
-	for x: f32 = -1.0; x <= 1.0; x += 0.25 {
-		for y: f32 = -1.0; y <= 1.0; y += 0.25 {
-			for z: f32 = -1.0; z <= 1.0; z += 0.25 {
-				new_point := Vec3{x, y, z}
-				cube_points[point_count] = new_point
-				point_count += 1
-			}
-		}
-	}
-}
-
-
-draw_cube :: proc() {
-	cube_points = {
-		Vec3{x = -1, y = -1, z = -1},
-		Vec3{x = -1, y = 1, z = -1},
-		Vec3{x = 1, y = 1, z = -1},
-		Vec3{x = 1, y = -1, z = -1},
-		Vec3{x = 1, y = 1, z = 1},
-		Vec3{x = 1, y = -1, z = 1},
-		Vec3{x = -1, y = 1, z = 1},
-		Vec3{x = -1, y = -1, z = 1},
-	}
-}
+triangles_to_render: [CUBE_FACES]Triangle
 
 
 setup :: proc() {
@@ -54,11 +25,6 @@ setup :: proc() {
 
 	// load array of vectors
 	// starting from -1 to 1 with lenght 2 for the cube
-	draw_cube()
-	projected_points = [N_POINTS]Vec2 {
-		0 ..< N_POINTS = Vec2{},
-	}
-
 }
 
 //////////////// Function that receives a 3d Vector and returns a  projected 2d point
@@ -83,10 +49,9 @@ process_input :: proc() {
 			is_window_running = false
 		}
 		if event.key.keysym.sym == .A {
-			for point, index in projected_points {
-				fmt.printfln("%v", point)
-			}
+			fmt.println("hello world")
 		}
+
 		break
 	case:
 		break
@@ -107,22 +72,43 @@ update :: proc() {
 	previous_frame_time = sdl.GetTicks()
 
 
-	cube_rotation.y += 0.01
 	cube_rotation.x += 0.01
+	cube_rotation.y += 0.01
 	cube_rotation.z += 0.01
-	for _, index in cube_points {
-		point := cube_points[index]
 
-		transformed_point := vec3_rotate_y(point, cube_rotation.y)
-		transformed_point = vec3_rotate_z(transformed_point, cube_rotation.z)
-		transformed_point = vec3_rotate_x(transformed_point, cube_rotation.x)
+	for face, index in cube_faces {
+		face_vertex: [3]Vec3
 
-		// simulate moving away from the camera
-		transformed_point.z -= camera_position.z
+		face_vertex[0] = cube_mesh[face.a - 1]
+		face_vertex[1] = cube_mesh[face.b - 1]
+		face_vertex[2] = cube_mesh[face.c - 1]
 
-		projected_point := project(transformed_point)
-		projected_points[index] = projected_point
+		projected_triangle: Triangle
+
+		for j in 0 ..= 2 {
+			transformed_point := face_vertex[j]
+			transformed_point = vec3_rotate_x(transformed_point, cube_rotation.x)
+			transformed_point = vec3_rotate_y(transformed_point, cube_rotation.y)
+			transformed_point = vec3_rotate_z(transformed_point, cube_rotation.z)
+
+			// zoom out from camera
+			transformed_point.z -= camera_position.z
+
+			// project the 3d point into 2d space
+			projected_point := project(transformed_point)
+
+			// scale and translate
+
+			projected_point.x += WINDOW_WIDTH / 2
+			projected_point.y += WINDOW_HEIGHT / 2
+
+			projected_triangle.points[j] = projected_point
+		}
+
+
+		triangles_to_render[index] = projected_triangle
 	}
+
 
 }
 
@@ -132,22 +118,16 @@ render :: proc() {
 
 	// Loop all projected points and render them
 
-	for point, index in projected_points {
-		color: u32
+	// render_draw_grid()
 
-		color = 0xFFFFFFFF
+	for triangle, index in triangles_to_render {
 
-		render_draw_rectangle(
-			int(point.x) + WINDOW_WIDTH / 2,
-			int(point.y) + WINDOW_HEIGHT / 2,
-			1,
-			1,
-			color,
-		)
+		for point, point_index in triangle.points {
+			render_draw_rectangle(int(point.x), int(point.y), 1, 1, 0xFFFFFFFF)
+		}
+
 	}
 
-
-	// render_draw_grid()
 
 	render_color_buffer()
 

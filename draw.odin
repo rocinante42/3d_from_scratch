@@ -59,3 +59,4 @@ draw_pixel :: proc(x, y: int, color: u32) {
 
 	color_buffer[y * WINDOW_WIDTH + x] = color
 }
+

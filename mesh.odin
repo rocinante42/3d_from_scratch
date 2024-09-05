@@ -1,0 +1,49 @@
+package game
+
+
+CUBE_VERTICES :: 8
+CUBE_FACES :: 6 * 2
+MeshVertices :: Vec3
+CubeVertices :: [CUBE_VERTICES]MeshVertices
+CubeFaces :: [CUBE_FACES]Face
+
+
+cube_mesh := mesh_generate_cube_vertices()
+
+mesh_generate_cube_vertices :: proc() -> CubeVertices {
+	cube_points: CubeVertices = {
+		Vec3{x = -1, y = -1, z = -1},
+		Vec3{x = -1, y = 1, z = -1},
+		Vec3{x = 1, y = 1, z = -1},
+		Vec3{x = 1, y = -1, z = -1},
+		Vec3{x = 1, y = 1, z = 1},
+		Vec3{x = 1, y = -1, z = 1},
+		Vec3{x = -1, y = 1, z = 1},
+		Vec3{x = -1, y = -1, z = 1},
+	}
+	return cube_points
+}
+
+// Generate faces. 6 faces per cube * two triangles per face
+mesh_generate_cube_faces :: proc() -> CubeFaces {
+	return CubeFaces {
+		// front
+		{a = 1, b = 2, c = 3},
+		{a = 1, b = 3, c = 4},
+		// right
+		{a = 4, b = 3, c = 5},
+		{a = 4, b = 5, c = 6},
+		// back
+		{a = 6, b = 5, c = 7},
+		{a = 6, b = 7, c = 8},
+		// left
+		{a = 8, b = 7, c = 2},
+		{a = 8, b = 2, c = 1},
+		// top
+		{a = 2, b = 7, c = 5},
+		{a = 2, b = 5, c = 3},
+		// bottom
+		{a = 6, b = 8, c = 1},
+		{a = 6, b = 1, c = 4},
+	}
+}
