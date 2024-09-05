@@ -10,6 +10,7 @@ projected_points: [N_POINTS]Vec2
 
 fov_factor: f32 = 128
 camera_position := Vec3{0, 0, -3}
+cube_rotation := Vec3{}
 
 
 setup :: proc() {
@@ -71,13 +72,17 @@ process_input :: proc() {
 }
 
 update :: proc() {
+	cube_rotation.y += 0.005
 	for _, index in cube_points {
 		point := cube_points[index]
 
-		// simulate moving away from the camera
-		point.z -= camera_position.z
+		transformed_point := vec3_rotate_y(point, cube_rotation.y)
+		transformed_point = vec3_rotate_z(transformed_point, cube_rotation.y)
 
-		projected_point := project(point)
+		// simulate moving away from the camera
+		transformed_point.z -= camera_position.z
+
+		projected_point := project(transformed_point)
 		projected_points[index] = projected_point
 	}
 
@@ -92,9 +97,10 @@ render :: proc() {
 	for point, index in projected_points {
 		color: u32
 
-		z := cube_points[index].z
+		transformed_point := vec3_rotate_y(cube_points[index], cube_rotation.y)
+		z := transformed_point.z
 
-		color = 0xFFFFFFFF - 0x00111111 * u32(z * 200)
+		color = 0xFFFFFFFF - 0x00111111 * u32(z * 800)
 
 		render_draw_rectangle(
 			int(point.x) + WINDOW_WIDTH / 2,
