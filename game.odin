@@ -3,8 +3,13 @@ import "core:fmt"
 import "core:log"
 import sdl "vendor:sdl2"
 
+FPS :: 30
+FRAME_TARGET_TIME :: 1000 / FPS
+previous_frame_time: u32 = 0
 
-N_POINTS :: 9 * 9 * 9
+
+N_POINTS :: 8
+// N_POINTS :: 9 * 9 * 9
 cube_points: [N_POINTS]Vec3
 projected_points: [N_POINTS]Vec2
 
@@ -13,14 +18,7 @@ camera_position := Vec3{0, 0, -3}
 cube_rotation := Vec3{}
 
 
-setup :: proc() {
-	// set the pixel at the column 10 and row 20 as green
-	// fmt.printfln("type of color_buufer: ", type_of(color_buffer))
-	// color_buffer[WINDOW_WIDTH * 20 + 10] = 0x00ff00
-
-
-	// load array of vectors
-	// starting from -1 to 1 with lenght 2 for the cube
+draw_noisey_cube :: proc() {
 	point_count := 0
 	for x: f32 = -1.0; x <= 1.0; x += 0.25 {
 		for y: f32 = -1.0; y <= 1.0; y += 0.25 {
@@ -31,7 +29,32 @@ setup :: proc() {
 			}
 		}
 	}
+}
 
+
+draw_cube :: proc() {
+	cube_points = {
+		Vec3{x = -1, y = -1, z = -1},
+		Vec3{x = -1, y = 1, z = -1},
+		Vec3{x = 1, y = 1, z = -1},
+		Vec3{x = 1, y = -1, z = -1},
+		Vec3{x = 1, y = 1, z = 1},
+		Vec3{x = 1, y = -1, z = 1},
+		Vec3{x = -1, y = 1, z = 1},
+		Vec3{x = -1, y = -1, z = 1},
+	}
+}
+
+
+setup :: proc() {
+	// set the pixel at the column 10 and row 20 as green
+	// fmt.printfln("type of color_buufer: ", type_of(color_buffer))
+	// color_buffer[WINDOW_WIDTH * 20 + 10] = 0x00ff00
+
+
+	// load array of vectors
+	// starting from -1 to 1 with lenght 2 for the cube
+	draw_cube()
 	projected_points = [N_POINTS]Vec2 {
 		0 ..< N_POINTS = Vec2{},
 	}
@@ -72,12 +95,27 @@ process_input :: proc() {
 }
 
 update :: proc() {
-	cube_rotation.y += 0.005
+
+
+	time_to_wait := FRAME_TARGET_TIME - (sdl.GetTicks() - previous_frame_time)
+
+	if time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME {
+		sdl.Delay(time_to_wait)
+	}
+
+
+	previous_frame_time = sdl.GetTicks()
+
+
+	cube_rotation.y += 0.01
+	cube_rotation.x += 0.01
+	cube_rotation.z += 0.01
 	for _, index in cube_points {
 		point := cube_points[index]
 
 		transformed_point := vec3_rotate_y(point, cube_rotation.y)
-		transformed_point = vec3_rotate_z(transformed_point, cube_rotation.y)
+		transformed_point = vec3_rotate_z(transformed_point, cube_rotation.z)
+		transformed_point = vec3_rotate_x(transformed_point, cube_rotation.x)
 
 		// simulate moving away from the camera
 		transformed_point.z -= camera_position.z
@@ -97,10 +135,7 @@ render :: proc() {
 	for point, index in projected_points {
 		color: u32
 
-		transformed_point := vec3_rotate_y(cube_points[index], cube_rotation.y)
-		z := transformed_point.z
-
-		color = 0xFFFFFFFF - 0x00111111 * u32(z * 800)
+		color = 0xFFFFFFFF
 
 		render_draw_rectangle(
 			int(point.x) + WINDOW_WIDTH / 2,
