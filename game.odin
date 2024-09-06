@@ -3,7 +3,7 @@ import "core:fmt"
 import "core:log"
 import sdl "vendor:sdl2"
 
-FPS :: 30
+FPS :: 60
 FRAME_TARGET_TIME :: 1000 / FPS
 previous_frame_time: u32 = 0
 
@@ -126,8 +126,36 @@ render :: proc() {
 			render_draw_rectangle(int(point.x), int(point.y), 1, 1, 0xFFFFFFFF)
 		}
 
+		// draw;lines;between;points
+		// from;a;to;be:
+		// draw_line_ddr(
+		// 	int(triangle.points[0].x),
+		// 	int(triangle.points[0].y),
+		// 	int(triangle.points[1].x),
+		// 	int(triangle.points[1].y),
+		// 	0xFF00FF00,
+		// )
+		// // from b to C:
+		draw_line_ddr(
+			int(triangle.points[1].x),
+			int(triangle.points[1].y),
+			int(triangle.points[2].x),
+			int(triangle.points[2].y),
+			0xFF00FF00,
+		)
+		// // from c to a:
+		draw_line_ddr(
+			int(triangle.points[2].x),
+			int(triangle.points[2].y),
+			int(triangle.points[0].x),
+			int(triangle.points[0].y),
+			0xFF00FF00,
+		)
+
 	}
 
+	// test the drawing line algorithm
+	// draw_line_ddr(100, 80, 100, 200, 0xFF00FF00)
 
 	render_color_buffer()
 

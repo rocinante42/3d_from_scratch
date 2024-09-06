@@ -34,7 +34,7 @@ initialize_window :: proc() -> (ok: bool) {
 		sdl.WINDOWPOS_CENTERED,
 		window_width,
 		window_height,
-		sdl.WindowFlags{.BORDERLESS},
+		sdl.WindowFlags{.BORDERLESS, .SKIP_TASKBAR},
 	)
 
 	if window == nil {
