@@ -8,7 +8,7 @@ FRAME_TARGET_TIME :: 1000 / FPS
 previous_frame_time: u32 = 0
 
 
-fov_factor: f32 = 128
+fov_factor: f32 = 128 * 2
 camera_position := Vec3{0, 0, -3}
 cube_rotation := Vec3{}
 
@@ -20,9 +20,11 @@ setup :: proc() {
 	// set the pixel at the column 10 and row 20 as green
 	// fmt.printfln("type of color_buufer: ", type_of(color_buffer))
 	// color_buffer[WINDOW_WIDTH * 20 + 10] = 0x00ff00
-	mesh_load_cube(&mesh)
+	// mesh_load_cube(&mesh)
 	// load array of vectors
 	// starting from -1 to 1 with lenght 2 for the cube
+	//
+	obj_load_from_path("f22.obj", &mesh)
 }
 
 ProjectionType :: enum {
@@ -92,7 +94,7 @@ update :: proc() {
 
 	mesh.rotation.x += 0.01
 	mesh.rotation.y += 0.01
-	mesh.rotation.z += 0.01
+	// mesh.rotation.z += 0.01
 
 	for face, index in mesh.faces {
 		face_vertex: [3]Vec3
