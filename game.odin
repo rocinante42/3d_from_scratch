@@ -8,8 +8,8 @@ FRAME_TARGET_TIME :: 1000 / FPS
 previous_frame_time: u32 = 0
 
 
-fov_factor: f32 = 128 * 2
-camera_position := Vec3{0, 0, -3}
+fov_factor: f32 = 128 * 4
+camera_position := Vec3{0, 0, 0}
 cube_rotation := Vec3{}
 
 
@@ -34,7 +34,6 @@ ProjectionType :: enum {
 
 //////////////// Function that receives a 3d Vector and returns a  projected 2d point
 project :: proc(point: Vec3, projection: ProjectionType) -> Vec2 {
-
 	projected_point: Vec2
 
 	switch projection {
@@ -48,9 +47,7 @@ project :: proc(point: Vec3, projection: ProjectionType) -> Vec2 {
 	case .PERSPECTIVE:
 		projected_point = Vec2{(point.x * fov_factor) / point.z, (point.y * fov_factor) / point.z}
 		break
-
 	}
-
 
 	return projected_point
 }
@@ -94,7 +91,7 @@ update :: proc() {
 
 	mesh.rotation.x += 0.01
 	mesh.rotation.y += 0.01
-	// mesh.rotation.z += 0.01
+	mesh.rotation.z += 0.01
 
 	for face, index in mesh.faces {
 		face_vertex: [3]Vec3
@@ -102,20 +99,43 @@ update :: proc() {
 		face_vertex[0] = mesh.vertices[face.a - 1]
 		face_vertex[1] = mesh.vertices[face.b - 1]
 		face_vertex[2] = mesh.vertices[face.c - 1]
-
+		transformed_point: [3]Vec3
 		projected_triangle: Triangle
 
 		for j in 0 ..= 2 {
-			transformed_point := face_vertex[j]
-			transformed_point = vec3_rotate_x(transformed_point, mesh.rotation.x)
-			transformed_point = vec3_rotate_y(transformed_point, mesh.rotation.y)
-			transformed_point = vec3_rotate_z(transformed_point, mesh.rotation.z)
+			transformed_point[j] = face_vertex[j]
+			transformed_point[j] = vec3_rotate_x(transformed_point[j], mesh.rotation.x)
+			transformed_point[j] = vec3_rotate_y(transformed_point[j], mesh.rotation.y)
+			transformed_point[j] = vec3_rotate_z(transformed_point[j], mesh.rotation.z)
 
 			// zoom out from camera
-			transformed_point.z -= camera_position.z
+			transformed_point[j].z += 5
+		}
+
+		// check backface culling 
+
+		// get the vectors AC and AB from the triangle
+		// order matters so we should do indexes 1, 2, 3 in clockwise orientation
+		vec_a := transformed_point[0] //    A
+		vec_b := transformed_point[1] //  /  \
+		vec_c := transformed_point[2] // C---B
+
+		// get the vectors segments from the triangle
+		vec_ab := vec3_substract(vec_b, vec_a)
+		vec_ac := vec3_substract(vec_c, vec_a)
+
+		// find the normal-cross product
+		normal := vec3_cross(vec_ab, vec_ac)
+		camera_ray := vec3_substract(camera_position, vec_a)
+
+		// dot product between camera ray and normal
+		dot_product := vec3_dot(normal, camera_ray)
+		if dot_product < 0 {continue}
+
+		for j in 0 ..= 2 {
 
 			// project the 3d point into 2d space
-			projected_point := project(transformed_point, .PERSPECTIVE)
+			projected_point := project(transformed_point[j], .PERSPECTIVE)
 
 			// scale and translate
 
@@ -123,10 +143,11 @@ update :: proc() {
 			projected_point.y += WINDOW_HEIGHT / 2
 
 			projected_triangle.points[j] = projected_point
+
 		}
-
-
 		append(&triangles_to_render, projected_triangle)
+
+
 	}
 
 
@@ -143,7 +164,7 @@ render :: proc() {
 	for triangle, index in triangles_to_render {
 
 		for point, point_index in triangle.points {
-			render_draw_rectangle(int(point.x), int(point.y), 2, 2, 0xFF00FF00)
+			render_draw_rectangle(int(point.x), int(point.y), 1, 1, 0xFFFFFF00)
 		}
 
 		draw_triangle_lines(
@@ -155,8 +176,6 @@ render :: proc() {
 			int(triangle.points[2].y),
 			0xFF00FF00,
 		)
-
-
 	}
 
 	// test the drawing line algorithm

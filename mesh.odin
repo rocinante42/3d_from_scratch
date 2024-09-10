@@ -67,6 +67,12 @@ mesh_delete_mesh :: proc(mesh: ^Mesh) {
 	delete(mesh.faces)
 }
 
+// try to clear the mesh dynamnic arrays and set the length to 0
+mesh_free_mesh :: proc(mesh: ^Mesh) {
+	clear(&mesh.faces)
+	clear(&mesh.vertices)
+}
+
 mesh_load_cube :: proc(mesh: ^Mesh) {
 	for vertex in cube_mesh {
 		append(&mesh.vertices, vertex)
@@ -79,5 +85,5 @@ mesh_load_cube :: proc(mesh: ^Mesh) {
 mesh := Mesh {
 	vertices = make([dynamic]MeshVertices),
 	faces = make([dynamic]Face),
-	rotation = Vec3{x = 0, y = 0, z = 3},
+	rotation = Vec3{x = 0, y = 0, z = 0},
 }

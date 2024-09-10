@@ -3,15 +3,18 @@ import "core:fmt"
 import "core:os"
 import "core:strconv"
 import "core:strings"
-
 // loads into mesh a single .obj from path
 obj_load_from_path :: proc(path: string, mesh: ^Mesh) -> bool {
 	// list first iterate thorugh entire file to get the lines
 	data, ok := os.read_entire_file(path, context.allocator)
 	if !ok {
+		fmt.println("Error reading from file at path: ", path)
 		return false
 	}
 	defer delete(data, context.allocator)
+
+	// clear the mesh so we don't overwrite indexes
+	mesh_free_mesh(mesh)
 
 	it := string(data)
 	for line in strings.split_lines_iterator(&it) {
@@ -28,8 +31,6 @@ obj_load_from_path :: proc(path: string, mesh: ^Mesh) -> bool {
 			vertex.x = f32(strconv.atof(elements[1]))
 			vertex.y = f32(strconv.atof(elements[2]))
 			vertex.z = f32(strconv.atof(elements[3]))
-
-			fmt.printfln("vertex data: %v", vertex)
 
 			// append the new vertex to the mesh data
 			append(&mesh.vertices, vertex)
@@ -58,7 +59,6 @@ obj_load_from_path :: proc(path: string, mesh: ^Mesh) -> bool {
 			face.b = u32(indexes[1])
 			face.c = u32(indexes[2])
 
-			fmt.printfln("Face data is: %v", face)
 			append(&mesh.faces, face)
 		} else {
 			continue

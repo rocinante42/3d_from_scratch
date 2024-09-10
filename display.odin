@@ -3,8 +3,8 @@ import "core:log"
 import sdl "vendor:sdl2"
 
 
-WINDOW_WIDTH :: 1280 //640
-WINDOW_HEIGHT :: 720 //380
+WINDOW_WIDTH :: 640 * 2
+WINDOW_HEIGHT :: 380 * 2
 
 is_window_running := false
 window: ^sdl.Window
