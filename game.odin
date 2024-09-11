@@ -8,7 +8,7 @@ FRAME_TARGET_TIME :: 1000 / FPS
 previous_frame_time: u32 = 0
 
 RenderOptionsState :: struct {
-	show_wireframe, show_vertex_dot, show_fill_color, enable_backface_culling: bool,
+	show_wireframe, show_vertex_dot, show_fill_color, show_fill_color_stripes, enable_backface_culling, show_fill_color_ditter: bool,
 }
 
 
@@ -16,8 +16,10 @@ fov_factor: f32 = 128 * 4
 camera_position := Vec3{0, 0, 0}
 cube_rotation := Vec3{}
 render_options_state := RenderOptionsState {
-	show_wireframe = true,
+	show_wireframe          = true,
+	enable_backface_culling = true,
 }
+noise_modifier := 8
 
 
 triangles_to_render := make([dynamic]Triangle)
@@ -32,7 +34,7 @@ setup :: proc() {
 	// starting from -1 to 1 with lenght 2 for the cube
 	//
 
-	obj_load_from_path("cube.obj", &mesh)
+	obj_load_from_path("f22.obj", &mesh)
 }
 
 ProjectionType :: enum {
@@ -77,24 +79,42 @@ process_input :: proc() {
 			break
 		case .NUM1:
 			render_options_state = RenderOptionsState {
-				show_vertex_dot = true,
-				show_wireframe  = true,
+				show_vertex_dot         = true,
+				show_wireframe          = true,
+				enable_backface_culling = true,
 			}
 			break
 		case .NUM2:
 			render_options_state = RenderOptionsState {
-				show_wireframe = true,
+				show_wireframe          = true,
+				enable_backface_culling = true,
 			}
 			break
 		case .NUM3:
 			render_options_state = RenderOptionsState {
-				show_fill_color = true,
+				show_fill_color         = true,
+				enable_backface_culling = true,
 			}
 			break
 		case .NUM4:
 			render_options_state = RenderOptionsState {
-				show_fill_color = true,
-				show_wireframe  = true,
+				show_fill_color         = true,
+				show_wireframe          = true,
+				enable_backface_culling = true,
+			}
+			break
+		case .NUM5:
+			render_options_state = RenderOptionsState {
+				show_wireframe          = true,
+				show_vertex_dot         = true,
+				show_fill_color_stripes = true,
+				enable_backface_culling = true,
+			}
+			break
+		case .NUM6:
+			render_options_state = RenderOptionsState {
+				enable_backface_culling = true,
+				show_fill_color_ditter  = true,
 			}
 			break
 		case .C:
@@ -103,10 +123,15 @@ process_input :: proc() {
 		case .D:
 			render_options_state.enable_backface_culling = false
 			break
+		case .M:
+			update_noise(1)
+			break
+		case .N:
+			update_noise(-1)
+			break
+		case:
+			break
 		}
-		break
-	case:
-		break
 	}
 
 }
@@ -181,12 +206,33 @@ update :: proc() {
 			projected_point.y += WINDOW_HEIGHT / 2
 
 			projected_triangle.points[j] = projected_point
+			projected_triangle.color = face.color
+            projected_triangle.avg_z = f32(transformed_point[0].z + transformed_point[1].z + transformed_point[2].z)/3.0
 
 		}
+
+
 		append(&triangles_to_render, projected_triangle)
 
 
 	}
+
+    // soort triangles to render by depth using buble sort
+    {
+        l := len(&triangles_to_render)
+        for i in 0..<l {
+            swapped := false 
+            for j in 0..<l - i - 1 {
+                if triangles_to_render[j].avg_z < triangles_to_render[j + 1].avg_z {
+                    swap_dynamic_triangle_array_positions(&triangles_to_render, j, j+1)
+                    swapped = true
+                }
+            }
+            if swapped == false {
+                break
+            }
+        }
+    }
 
 
 }
@@ -201,7 +247,6 @@ render :: proc() {
 
 	for triangle, index in triangles_to_render {
 
-		
 
 		if render_options_state.show_fill_color {
 			draw_triangle_fill(
@@ -211,7 +256,31 @@ render :: proc() {
 				int(triangle.points[1].y),
 				int(triangle.points[2].x),
 				int(triangle.points[2].y),
-				0xffffffff,
+				triangle.color,
+			)
+		}
+
+		if render_options_state.show_fill_color_stripes {
+			draw_triangle_fill_stripes(
+				int(triangle.points[0].x),
+				int(triangle.points[0].y),
+				int(triangle.points[1].x),
+				int(triangle.points[1].y),
+				int(triangle.points[2].x),
+				int(triangle.points[2].y),
+				triangle.color,
+			)
+		}
+
+		if render_options_state.show_fill_color_ditter {
+			draw_triangle_fill_ditter(
+				int(triangle.points[0].x),
+				int(triangle.points[0].y),
+				int(triangle.points[1].x),
+				int(triangle.points[1].y),
+				int(triangle.points[2].x),
+				int(triangle.points[2].y),
+				triangle.color,
 			)
 		}
 
@@ -227,7 +296,7 @@ render :: proc() {
 			)
 		}
 
-        if render_options_state.show_vertex_dot {
+		if render_options_state.show_vertex_dot {
 			for point, point_index in triangle.points {
 				render_draw_rectangle(int(point.x), int(point.y), 3, 3, 0xFFFFFF00)
 			}
