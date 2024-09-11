@@ -34,7 +34,7 @@ setup :: proc() {
 	// starting from -1 to 1 with lenght 2 for the cube
 	//
 
-	obj_load_from_path("f22.obj", &mesh)
+	obj_load_from_path("icosphere2.obj", &mesh)
 }
 
 ProjectionType :: enum {
