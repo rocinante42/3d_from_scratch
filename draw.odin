@@ -88,3 +88,73 @@ draw_line_ddr :: proc(x0, y0, x1, y1: int, color: u32) {
 	}
 
 }
+
+draw_triangle_lines :: proc(x0, y0, x1, y1, x2, y2: int, color: u32) {
+	draw_line_ddr(x0, y0, x1, y1, color)
+	draw_line_ddr(x1, y1, x2, y2, color)
+	draw_line_ddr(x2, y2, x0, y0, color)
+}
+
+fill_flat_top_triangle :: proc(x0, y0, x1, y1, x2, y2: int, color: u32) {
+	inv_slope_a := f32(x2 - x0) / f32(y2 - y0)
+	inv_slope_b := f32(x2 - x1) / f32(y2 - y1)
+
+	x_start := f32(x2)
+	x_end := f32(x2)
+
+	for y := y2; y >= y0; y -= 1 {
+		draw_line_ddr(int(math.round(x_start)), y, int(x_end), y, color)
+		x_start -= inv_slope_a
+		x_end -= inv_slope_b
+	}
+}
+
+fill_flat_bottom_triangle :: proc(x0, y0, x1, y1, x2, y2: int, color: u32) {
+	inv_slope_a := f32(x1 - x0) / f32(y1 - y0)
+	inv_slope_b := f32(x2 - x0) / f32(y2 - y0)
+
+	x_start := f32(x0)
+	x_end := f32(x0)
+
+	// loop all the scan lines from top to bottom:
+	for y := y0; y <= y2; y += 1 {
+		draw_line_ddr(int(math.round(x_start)), y, int(x_end), y, color)
+		x_start += inv_slope_a
+		x_end += inv_slope_b
+	}
+}
+
+draw_triangle_fill :: proc(x0, y0, x1, y1, x2, y2: int, fill_color: u32) {
+
+	// shadow variables
+	x0, x1, x2 := x0, x1, x2
+	y0, y1, y2 := y0, y1, y2
+	// sort points of the triangle on Y axis
+	if (y0 > y1) {
+		swap(&y0, &y1)
+		swap(&x0, &x1)
+	}
+	if (y1 > y2) {
+		swap(&y1, &y2)
+		swap(&x1, &x2)
+	}
+	if (y0 > y1) {
+		swap(&y0, &y1)
+		swap(&x0, &x1)
+	}
+
+	if y1 == y2 {
+		fill_flat_bottom_triangle(x0, y0, x1, y1, x2, y2, fill_color)
+	} else if y0 == y1 {
+		fill_flat_top_triangle(x0, y0, x1, y1, x2, y2, fill_color)
+	} else {
+		// find Triangle midpoint. 
+		my := y1
+		mx := f32((x2 - x0) * (y1 - y0)) / f32(y2 - y0) + f32(x0)
+		// fill triangle
+		fill_flat_bottom_triangle(x0, y0, x1, y1, int(math.round(mx)), my, fill_color)
+		fill_flat_top_triangle(x1, y1, int(math.round(mx)), my, x2, y2, fill_color)
+	}
+
+
+}

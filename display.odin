@@ -68,12 +68,6 @@ initialize_window :: proc() -> (ok: bool) {
 	return true
 }
 
-draw_triangle_lines :: proc(x0, y0, x1, y1, x2, y2: int, color: u32) {
-	draw_line_ddr(x0, y0, x1, y1, color)
-	draw_line_ddr(x1, y1, x2, y2, color)
-	draw_line_ddr(x2, y2, x0, y0, color)
-}
-
 destroy_window :: proc() {
 	sdl.DestroyTexture(color_buffer_texture)
 	sdl.DestroyRenderer(renderer)

@@ -7,10 +7,17 @@ FPS :: 60
 FRAME_TARGET_TIME :: 1000 / FPS
 previous_frame_time: u32 = 0
 
+RenderOptionsState :: struct {
+	show_wireframe, show_vertex_dot, show_fill_color, enable_backface_culling: bool,
+}
+
 
 fov_factor: f32 = 128 * 4
 camera_position := Vec3{0, 0, 0}
 cube_rotation := Vec3{}
+render_options_state := RenderOptionsState {
+	show_wireframe = true,
+}
 
 
 triangles_to_render := make([dynamic]Triangle)
@@ -24,7 +31,8 @@ setup :: proc() {
 	// load array of vectors
 	// starting from -1 to 1 with lenght 2 for the cube
 	//
-	obj_load_from_path("f22.obj", &mesh)
+
+	obj_load_from_path("cube.obj", &mesh)
 }
 
 ProjectionType :: enum {
@@ -63,13 +71,39 @@ process_input :: proc() {
 		is_window_running = false
 		break
 	case .KEYDOWN:
-		if event.key.keysym.sym == .ESCAPE {
+		#partial switch event.key.keysym.sym {
+		case .ESCAPE:
 			is_window_running = false
+			break
+		case .NUM1:
+			render_options_state = RenderOptionsState {
+				show_vertex_dot = true,
+				show_wireframe  = true,
+			}
+			break
+		case .NUM2:
+			render_options_state = RenderOptionsState {
+				show_wireframe = true,
+			}
+			break
+		case .NUM3:
+			render_options_state = RenderOptionsState {
+				show_fill_color = true,
+			}
+			break
+		case .NUM4:
+			render_options_state = RenderOptionsState {
+				show_fill_color = true,
+				show_wireframe  = true,
+			}
+			break
+		case .C:
+			render_options_state.enable_backface_culling = true
+			break
+		case .D:
+			render_options_state.enable_backface_culling = false
+			break
 		}
-		if event.key.keysym.sym == .A {
-			fmt.println("hello world")
-		}
-
 		break
 	case:
 		break
@@ -113,24 +147,28 @@ update :: proc() {
 		}
 
 		// check backface culling 
+		if render_options_state.enable_backface_culling {
+			// get the vectors AC and AB from the triangle
+			// order matters so we should do indexes 1, 2, 3 in clockwise orientation
+			vec_a := transformed_point[0] //    A
+			vec_b := transformed_point[1] //  /  \
+			vec_c := transformed_point[2] // C---B
 
-		// get the vectors AC and AB from the triangle
-		// order matters so we should do indexes 1, 2, 3 in clockwise orientation
-		vec_a := transformed_point[0] //    A
-		vec_b := transformed_point[1] //  /  \
-		vec_c := transformed_point[2] // C---B
+			// get the vectors segments from the triangle
+			vec_ab := vec3_substract(vec_b, vec_a)
+			vec3_normalize(&vec_ab)
+			vec_ac := vec3_substract(vec_c, vec_a)
+			vec3_normalize(&vec_ac)
+			// find the normal-cross product
+			normal := vec3_cross(vec_ab, vec_ac)
+			vec3_normalize(&normal)
+			camera_ray := vec3_substract(camera_position, vec_a)
 
-		// get the vectors segments from the triangle
-		vec_ab := vec3_substract(vec_b, vec_a)
-		vec_ac := vec3_substract(vec_c, vec_a)
+			// dot product between camera ray and normal
+			dot_product := vec3_dot(normal, camera_ray)
+			if dot_product < 0 {continue}
+		}
 
-		// find the normal-cross product
-		normal := vec3_cross(vec_ab, vec_ac)
-		camera_ray := vec3_substract(camera_position, vec_a)
-
-		// dot product between camera ray and normal
-		dot_product := vec3_dot(normal, camera_ray)
-		if dot_product < 0 {continue}
 
 		for j in 0 ..= 2 {
 
@@ -163,20 +201,41 @@ render :: proc() {
 
 	for triangle, index in triangles_to_render {
 
-		for point, point_index in triangle.points {
-			render_draw_rectangle(int(point.x), int(point.y), 1, 1, 0xFFFFFF00)
+		
+
+		if render_options_state.show_fill_color {
+			draw_triangle_fill(
+				int(triangle.points[0].x),
+				int(triangle.points[0].y),
+				int(triangle.points[1].x),
+				int(triangle.points[1].y),
+				int(triangle.points[2].x),
+				int(triangle.points[2].y),
+				0xffffffff,
+			)
 		}
 
-		draw_triangle_lines(
-			int(triangle.points[0].x),
-			int(triangle.points[0].y),
-			int(triangle.points[1].x),
-			int(triangle.points[1].y),
-			int(triangle.points[2].x),
-			int(triangle.points[2].y),
-			0xFF00FF00,
-		)
+		if render_options_state.show_wireframe == true {
+			draw_triangle_lines(
+				int(triangle.points[0].x),
+				int(triangle.points[0].y),
+				int(triangle.points[1].x),
+				int(triangle.points[1].y),
+				int(triangle.points[2].x),
+				int(triangle.points[2].y),
+				0xFF00FF00,
+			)
+		}
+
+        if render_options_state.show_vertex_dot {
+			for point, point_index in triangle.points {
+				render_draw_rectangle(int(point.x), int(point.y), 3, 3, 0xFFFFFF00)
+			}
+		}
+
 	}
+	// draw_triangle_lines(300, 100, 50, 400, 500, 700, 0xffff0000)
+	// draw_triangle_fill(300, 100, 50, 400, 500, 700, 0xffff0000)
 
 	// test the drawing line algorithm
 	// draw_line_ddr(100, 80, 100, 200, 0xFF00FF00)
