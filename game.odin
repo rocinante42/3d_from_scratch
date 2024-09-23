@@ -1,7 +1,9 @@
 package game
 import "core:fmt"
 import "core:log"
+import oat "oatmeal"
 import sdl "vendor:sdl2"
+
 
 FPS :: 60
 FRAME_TARGET_TIME :: 1000 / FPS
@@ -152,20 +154,28 @@ update :: proc() {
 	mesh.rotation.y += 0.01
 	mesh.rotation.z += 0.01
 
+	mesh.scale.x += 0.002
+    mesh.scale.y += 0.002
+    mesh.scale.z += 0.002
+	mat4_scaleMatrix := oat.mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z)
+
 	for face, index in mesh.faces {
 		face_vertex: [3]Vec3
 
 		face_vertex[0] = mesh.vertices[face.a - 1]
 		face_vertex[1] = mesh.vertices[face.b - 1]
 		face_vertex[2] = mesh.vertices[face.c - 1]
-		transformed_point: [3]Vec3
+		transformed_point: [3]oat.Vec4
 		projected_triangle: Triangle
 
 		for j in 0 ..= 2 {
-			transformed_point[j] = face_vertex[j]
-			transformed_point[j] = vec3_rotate_x(transformed_point[j], mesh.rotation.x)
-			transformed_point[j] = vec3_rotate_y(transformed_point[j], mesh.rotation.y)
-			transformed_point[j] = vec3_rotate_z(transformed_point[j], mesh.rotation.z)
+			transformed_point[j] = oat.vec4_from_vec3(face_vertex[j])
+			// transformed_point[j] = oat.vec3_rotate_x(transformed_point[j], mesh.rotation.x)
+			// transformed_point[j] = oat.vec3_rotate_y(transformed_point[j], mesh.rotation.y)
+			// transformed_point[j] = oat.vec3_rotate_z(transformed_point[j], mesh.rotation.z)
+
+			// TODO: update the transformation of rotation using a matrix
+            transformed_point[j] = oat.mat4_mul_vec4(mat4_scaleMatrix, transformed_point[j])
 
 			// zoom out from camera
 			transformed_point[j].z += 5
@@ -175,22 +185,22 @@ update :: proc() {
 		if render_options_state.enable_backface_culling {
 			// get the vectors AC and AB from the triangle
 			// order matters so we should do indexes 1, 2, 3 in clockwise orientation
-			vec_a := transformed_point[0] //    A
-			vec_b := transformed_point[1] //  /  \
-			vec_c := transformed_point[2] // C---B
+			vec_a := oat.vec3_from_vec4(transformed_point[0]) //    A
+			vec_b := oat.vec3_from_vec4(transformed_point[1]) //  /  \
+			vec_c := oat.vec3_from_vec4(transformed_point[2]) // C---B
 
 			// get the vectors segments from the triangle
-			vec_ab := vec3_substract(vec_b, vec_a)
-			vec3_normalize(&vec_ab)
-			vec_ac := vec3_substract(vec_c, vec_a)
-			vec3_normalize(&vec_ac)
+			vec_ab := oat.vec3_substract(vec_b, vec_a)
+			oat.vec3_normalize(&vec_ab)
+			vec_ac := oat.vec3_substract(vec_c, vec_a)
+			oat.vec3_normalize(&vec_ac)
 			// find the normal-cross product
-			normal := vec3_cross(vec_ab, vec_ac)
-			vec3_normalize(&normal)
-			camera_ray := vec3_substract(camera_position, vec_a)
+			normal := oat.vec3_cross(vec_ab, vec_ac)
+			oat.vec3_normalize(&normal)
+			camera_ray := oat.vec3_substract(camera_position, vec_a)
 
 			// dot product between camera ray and normal
-			dot_product := vec3_dot(normal, camera_ray)
+			dot_product := oat.vec3_dot(normal, camera_ray)
 			if dot_product < 0 {continue}
 		}
 
@@ -198,7 +208,7 @@ update :: proc() {
 		for j in 0 ..= 2 {
 
 			// project the 3d point into 2d space
-			projected_point := project(transformed_point[j], .PERSPECTIVE)
+			projected_point := project(oat.vec3_from_vec4(transformed_point[j]), .PERSPECTIVE)
 
 			// scale and translate
 
@@ -207,7 +217,8 @@ update :: proc() {
 
 			projected_triangle.points[j] = projected_point
 			projected_triangle.color = face.color
-            projected_triangle.avg_z = f32(transformed_point[0].z + transformed_point[1].z + transformed_point[2].z)/3.0
+			projected_triangle.avg_z =
+				f32(transformed_point[0].z + transformed_point[1].z + transformed_point[2].z) / 3.0
 
 		}
 
@@ -217,22 +228,22 @@ update :: proc() {
 
 	}
 
-    // soort triangles to render by depth using buble sort
-    {
-        l := len(&triangles_to_render)
-        for i in 0..<l {
-            swapped := false 
-            for j in 0..<l - i - 1 {
-                if triangles_to_render[j].avg_z < triangles_to_render[j + 1].avg_z {
-                    swap_dynamic_triangle_array_positions(&triangles_to_render, j, j+1)
-                    swapped = true
-                }
-            }
-            if swapped == false {
-                break
-            }
-        }
-    }
+	// soort triangles to render by depth using buble sort
+	{
+		l := len(&triangles_to_render)
+		for i in 0 ..< l {
+			swapped := false
+			for j in 0 ..< l - i - 1 {
+				if triangles_to_render[j].avg_z < triangles_to_render[j + 1].avg_z {
+					swap_dynamic_triangle_array_positions(&triangles_to_render, j, j + 1)
+					swapped = true
+				}
+			}
+			if swapped == false {
+				break
+			}
+		}
+	}
 
 
 }
@@ -256,7 +267,7 @@ render :: proc() {
 				int(triangle.points[1].y),
 				int(triangle.points[2].x),
 				int(triangle.points[2].y),
-				triangle.color,
+				0xff00ffff//triangle.color,
 			)
 		}
 

@@ -1,7 +1,8 @@
 package game
+import oat "oatmeal"
 
 Triangle :: struct {
-	points: [3]Vec2,
+	points: [3]oat.Vec2,
 	color:  u32,
     avg_z: f32
 }

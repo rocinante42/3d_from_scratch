@@ -1,6 +1,9 @@
 package game
+import oat "oatmeal"
 
-MeshVertices :: Vec3
+MeshVertices :: oat.Vec3
+Vec3 :: oat.Vec3
+Vec2 :: oat.Vec2
 
 Face :: struct {
 	a, b, c: u32,
@@ -61,6 +64,8 @@ Mesh :: struct {
 	vertices: [dynamic]MeshVertices,
 	faces:    [dynamic]Face,
 	rotation: Vec3,
+    scale: Vec3,
+    translation: Vec3
 }
 
 mesh_delete_mesh :: proc(mesh: ^Mesh) {
@@ -87,4 +92,5 @@ mesh := Mesh {
 	vertices = make([dynamic]MeshVertices),
 	faces = make([dynamic]Face),
 	rotation = Vec3{x = 0, y = 0, z = 0},
+    scale = Vec3 {1, 1, 1}
 }
