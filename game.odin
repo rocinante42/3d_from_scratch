@@ -151,12 +151,23 @@ update :: proc() {
 	previous_frame_time = sdl.GetTicks()
 
 	mesh.rotation.x += 0.01
-	mesh.rotation.y += 0.01
-	mesh.rotation.z += 0.01
+	// mesh.rotation.y += 0.01
+	// mesh.rotation.z += 0.01
+	mat4_rotationXMatrix := oat.mat4_make_rotation_x(mesh.rotation.x)
+	mat4_rotationYMatrix := oat.mat4_make_rotation_y(mesh.rotation.y)
+	mat4_rotationZMatrix := oat.mat4_make_rotation_z(mesh.rotation.z)
 
-	mesh.scale.x += 0.002
-    mesh.scale.y += 0.002
-    mesh.scale.z += 0.002
+	// mesh.translation.x += 0.008
+	mesh.translation.z = 5.0
+	mat4_translationMatrix := oat.mat4_make_translation(
+		mesh.translation.x,
+		mesh.translation.y,
+		mesh.translation.z,
+	)
+
+	// mesh.scale.x += 0.0002
+	// mesh.scale.y += 0.0002
+	// mesh.scale.z += 0.0002
 	mat4_scaleMatrix := oat.mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z)
 
 	for face, index in mesh.faces {
@@ -169,16 +180,23 @@ update :: proc() {
 		projected_triangle: Triangle
 
 		for j in 0 ..= 2 {
-			transformed_point[j] = oat.vec4_from_vec3(face_vertex[j])
-			// transformed_point[j] = oat.vec3_rotate_x(transformed_point[j], mesh.rotation.x)
-			// transformed_point[j] = oat.vec3_rotate_y(transformed_point[j], mesh.rotation.y)
-			// transformed_point[j] = oat.vec3_rotate_z(transformed_point[j], mesh.rotation.z)
+			point := oat.vec4_from_vec3(face_vertex[j])
 
-			// TODO: update the transformation of rotation using a matrix
-            transformed_point[j] = oat.mat4_mul_vec4(mat4_scaleMatrix, transformed_point[j])
+			// create a WorldMatrix combining, scale, rotation and translation
+			worldMatrix := oat.mat4_identity()
 
-			// zoom out from camera
-			transformed_point[j].z += 5
+			// combine all linear transformation matrixes into one 
+			worldMatrix = oat.mat4_multiply(mat4_scaleMatrix, worldMatrix)
+			worldMatrix = oat.mat4_multiply(mat4_rotationZMatrix, worldMatrix)
+			worldMatrix = oat.mat4_multiply(mat4_rotationXMatrix, worldMatrix)
+			worldMatrix = oat.mat4_multiply(mat4_rotationYMatrix, worldMatrix)
+			worldMatrix = oat.mat4_multiply(mat4_translationMatrix, worldMatrix)
+
+
+			// Update point with the worldMatrix combined 
+			point = oat.mat4_mul_vec4(worldMatrix, point)
+			// Finally, let's mutate the transformed_point element
+			transformed_point[j] = point
 		}
 
 		// check backface culling 
@@ -267,7 +285,7 @@ render :: proc() {
 				int(triangle.points[1].y),
 				int(triangle.points[2].x),
 				int(triangle.points[2].y),
-				0xff00ffff//triangle.color,
+				0xff00ffff, //triangle.color,
 			)
 		}
 
